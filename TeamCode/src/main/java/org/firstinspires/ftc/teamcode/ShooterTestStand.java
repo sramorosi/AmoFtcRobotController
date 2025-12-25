@@ -37,7 +37,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * This opmode is a copy of 7462 DECODE Mecanum Teleop
  * Its purpose is to run a single shooter motor, launch flap servo, using limelight on a test stand
  * The overall purpose is to optimize artefact shots.
- * Data logging 
+ * Data logging
  * All references to chassis have been removed
  */
 @TeleOp(name = "ShooterTestStand")
@@ -57,7 +57,7 @@ public class ShooterTestStand extends OpMode {
     private boolean leftIsRunning;
     private boolean emergencyMode = false;
 
-    ShooterController.Datalog datalog; // create the data logger object
+    ShooterController.Datalog datalog = new ShooterController.Datalog("ShooterLog");
 
     int i=0;
 
@@ -73,9 +73,6 @@ public class ShooterTestStand extends OpMode {
 
         timerLeft.reset();
         timerFlipper.reset();
-
-        // Initialize the datalog
-        datalog = new ShooterController.Datalog("ShooterLog");
     }
 
     //we are using the methods from OpMode and @Override is so that we can write our own stuff for this method
@@ -84,7 +81,7 @@ public class ShooterTestStand extends OpMode {
         telemetry.addData("Pattern", limelight.getObelisk());
         telemetry.addData("team ID", limelight.getID());
 
-        telemetry.addLine("Bumpers to shoot, a to turntotag");
+        telemetry.addLine("Left Bumper to shoot");
         telemetry.addLine("Press b for red, x for blue");
         telemetry.update();
         if (gamepad1.bWasPressed()) {
@@ -109,7 +106,7 @@ public class ShooterTestStand extends OpMode {
         telemetry.addData("limelight angle", limelight.getTx());
         telemetry.addData("shooterLeftCurrentVelocity", shooterLeft.getVelocity());
         telemetry.addData("shooterLeftTargetVelocity", shooterLeft.targetVelocity);
-        telemetry.addData("Kp", kP);
+        //telemetry.addData("Kp", kP);
         telemetry.addData("TimerLeft", timerLeft.seconds());
         telemetry.update();
 
