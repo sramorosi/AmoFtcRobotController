@@ -52,12 +52,17 @@ public class ShooterTestStand extends OpMode {
     ElapsedTime timerLeft = new ElapsedTime();
     ElapsedTime timerFlipper = new ElapsedTime();
 
-    private double idlePower = 20;
-    private double kP = 0.3; // was 0.14 before adding 0 breaking
+    private static double IDLEPOWER = 20;
+    //private double kP = 0.3; // was 0.14 before adding 0 breaking
     private boolean leftIsRunning;
+
+    private boolean readyToShoot = true;
     private boolean emergencyMode = false;
 
-    ShooterController.Datalog datalog = new ShooterController.Datalog("ShooterLog");
+    private static double FLAPDOWN = 0.45;
+    private static double FLAPUP = 0.75;
+
+    ShooterTestStand.Datalog datalog = new ShooterTestStand.Datalog("ShooterLog");
 
     int i=0;
 
@@ -73,12 +78,14 @@ public class ShooterTestStand extends OpMode {
 
         timerLeft.reset();
         timerFlipper.reset();
+
+        launchFlapLeft.setPosition(FLAPDOWN);
     }
 
     //we are using the methods from OpMode and @Override is so that we can write our own stuff for this method
     @Override
     public void init_loop() {
-        telemetry.addData("Pattern", limelight.getObelisk());
+        //telemetry.addData("Pattern", limelight.getObelisk());
         telemetry.addData("team ID", limelight.getID());
 
         telemetry.addLine("Left Bumper to shoot");
@@ -95,6 +102,7 @@ public class ShooterTestStand extends OpMode {
 
     @Override
     public void start() {
+        shooterLeft.targetVelocity = IDLEPOWER;
     }
 
     @Override
@@ -105,18 +113,18 @@ public class ShooterTestStand extends OpMode {
 
         telemetry.addData("limelight angle", limelight.getTx());
         telemetry.addData("shooterLeftCurrentVelocity", shooterLeft.getVelocity());
-        telemetry.addData("shooterLeftTargetVelocity", shooterLeft.targetVelocity);
+        telemetry.addData("shooterLeftTargetVelocity", getShooterVelo());
         //telemetry.addData("Kp", kP);
         telemetry.addData("TimerLeft", timerLeft.seconds());
         telemetry.update();
 
 
-        // Driver Controlstelemetry.addData("Is Tag Recent", limelight.seeObelisk);
-        if (gamepad1.leftBumperWasPressed() && (limelight.isDataCurrent || emergencyMode)) {
-            // do math here
-            //shooterLeft.targetVelocity = (limelight.getRange() + 202.17 - 10) / 8.92124;
-            shooterLeft.targetVelocity = (limelight.getRange()+100.99)/7.3712;
+        // Driver Controls launch
+        //if (gamepad1.leftBumperWasPressed() && (limelight.isDataCurrent || emergencyMode)) {
+        if (gamepad1.left_bumper && readyToShoot && (limelight.isDataCurrent || emergencyMode)) {
+                shooterLeft.targetVelocity = getShooterVelo();
             leftIsRunning = true;
+            readyToShoot = false;
             timerLeft.reset();
         }
 
@@ -124,21 +132,27 @@ public class ShooterTestStand extends OpMode {
         if (leftIsRunning) {
             if (shooterLeft.atSpeed()) {
                 timerLeft.reset();
-                launchFlapLeft.setPosition(0);
+                launchFlapLeft.setPosition(FLAPUP);
                 leftIsRunning = false;
             }
         }
 
-        // Servo Reset
-        if (timerLeft.seconds() > 0.5 && !leftIsRunning) {
-            launchFlapLeft.setPosition(0.3);
-            shooterLeft.targetVelocity = idlePower;
+        // Command launch Flap Down
+        if (timerLeft.seconds() > 0.4 && !leftIsRunning) {
+            launchFlapLeft.setPosition(FLAPDOWN);
+            //shooterLeft.targetVelocity = IDLEPOWER;
+            //readyToShoot=true;
         }
-
+        // Flap Down and next artifact is ready
+        if (timerLeft.seconds() > 0.8 && !leftIsRunning) {
+            //launchFlapLeft.setPosition(FLAPDOWN);
+            shooterLeft.targetVelocity = IDLEPOWER;
+            readyToShoot=true;
+        }
         // If camera not working press this and shoot near point of close V.
         if (gamepad1.leftStickButtonWasPressed()) {
             shooterLeft.targetVelocity = 30;
-            idlePower = 30;
+            IDLEPOWER = 30;
             emergencyMode = true;
         }
 
@@ -146,7 +160,7 @@ public class ShooterTestStand extends OpMode {
         // Note that the order in which we set datalog fields
         // does *not* matter! Order is configured inside the Datalog class constructor.
         datalog.loopCounter.set(i);
-        datalog.runTime.set(timerLeft.seconds());
+        //datalog.runTime.set(timerLeft.seconds());
         datalog.flapPos.set(launchFlapLeft.getPosition());
         datalog.shooterVelocity.set(shooterLeft.getVelocity());
         datalog.targetVelocity.set(shooterLeft.targetVelocity);
@@ -155,6 +169,11 @@ public class ShooterTestStand extends OpMode {
         i++;
     }
 
+    public double getShooterVelo() {
+        // do math here
+        //return (limelight.getRange() + 202.17 - 10) / 8.92124;
+        return (limelight.getRange()+100.99)/7.3712;
+    }
 
     /**
     * Datalog class encapsulates all the fields that will go into the datalog.
