@@ -36,21 +36,19 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 /*
  * This opmode is a copy of 7462 DECODE Mecanum Teleop
  * Its purpose is to run a single shooter motor, launch flap servo, using limelight on a test stand
- * The overall purpose is to optimize artefact shots.
- * Data logging
- * All references to chassis have been removed
+ * The overall purpose is to improve artefact shots (3 in a row, accuracy)
+ * Data logging is used to see timing
  */
 @TeleOp(name = "ShooterTestStand")
 //@Disabled //comment this out when ready to add to android phone
 public class ShooterTestStand extends OpMode {
-    GoalTagLimelight limelight;
+    LimelightDecode limelight;
     Shooter shooterLeft;
 
     Servo launchFlapLeft;
 
     // Timers
     ElapsedTime timerLeft = new ElapsedTime();
-    ElapsedTime timerFlipper = new ElapsedTime();
 
     private static double IDLEPOWER = 20;
     //private double kP = 0.3; // was 0.14 before adding 0 breaking
@@ -59,12 +57,15 @@ public class ShooterTestStand extends OpMode {
     private boolean readyToShoot = true;
     private boolean emergencyMode = false;
 
-    private static double FLAPDOWN = 0.45;
-    private static double FLAPUP = 0.75;
+    private static final double FLAPDOWN = 0.45;
+    private static final double FLAPUP = 0.75;
 
     ShooterTestStand.Datalog datalog = new ShooterTestStand.Datalog("ShooterLog");
 
     int i=0;
+
+    double cameraA = 0.040; // fixed tilt, in radians
+
 
     @Override
     public void init() {
@@ -73,11 +74,10 @@ public class ShooterTestStand extends OpMode {
         shooterLeft = new Shooter(hardwareMap, "shooterLeft", true);
         shooterLeft.setControllerValues(0.3, 0.0243);
 
-        limelight = new GoalTagLimelight();
-        limelight.init(hardwareMap, telemetry);
+        limelight = new LimelightDecode();
+        limelight.init(hardwareMap, 17.0,cameraA);
 
         timerLeft.reset();
-        timerFlipper.reset();
 
         launchFlapLeft.setPosition(FLAPDOWN);
     }
@@ -90,7 +90,6 @@ public class ShooterTestStand extends OpMode {
 
         telemetry.addLine("Left Bumper to shoot");
         telemetry.addLine("Press b for red, x for blue");
-        telemetry.update();
         if (gamepad1.bWasPressed()) {
 //            goalTag.targetAprilTagID = 24;
             limelight.setTeam(24);
@@ -98,6 +97,21 @@ public class ShooterTestStand extends OpMode {
             //goalTag.targetAprilTagID = 20;
             limelight.setTeam(20);
         }
+
+        if (gamepad1.dpadLeftWasPressed()) {
+            cameraA += 0.002;
+            limelight.setCameraAngle(cameraA);
+        } else if (gamepad1.dpadRightWasPressed()) {
+            cameraA -= 0.002;
+            limelight.setCameraAngle(cameraA);
+        }
+        telemetry.addData("Camera Angle ",cameraA);
+
+        // Add limelight processing so we can see if range is good.
+        limelight.process(telemetry);
+
+        telemetry.update();
+
     }
 
     @Override
@@ -115,7 +129,7 @@ public class ShooterTestStand extends OpMode {
         telemetry.addData("shooterLeftCurrentVelocity", shooterLeft.getVelocity());
         telemetry.addData("shooterLeftTargetVelocity", getShooterVelo());
         //telemetry.addData("Kp", kP);
-        telemetry.addData("TimerLeft", timerLeft.seconds());
+        //telemetry.addData("TimerLeft", timerLeft.seconds());
         telemetry.update();
 
 
@@ -160,7 +174,6 @@ public class ShooterTestStand extends OpMode {
         // Note that the order in which we set datalog fields
         // does *not* matter! Order is configured inside the Datalog class constructor.
         datalog.loopCounter.set(i);
-        //datalog.runTime.set(timerLeft.seconds());
         datalog.flapPos.set(launchFlapLeft.getPosition());
         datalog.shooterVelocity.set(shooterLeft.getVelocity());
         datalog.targetVelocity.set(shooterLeft.targetVelocity);
@@ -171,8 +184,13 @@ public class ShooterTestStand extends OpMode {
 
     public double getShooterVelo() {
         // do math here
-        //return (limelight.getRange() + 202.17 - 10) / 8.92124;
-        return (limelight.getRange()+100.99)/7.3712;
+        //return (limelight.getRange() + 202.17 - 10) / 8.92124; // older function
+        //return (limelight.getRange()+100.99)/7.3712;
+        double poly;
+        double range;
+        range = limelight.getRange();
+        poly = 26.2 - 0.0261*range + 0.000804*range*range;
+        return poly;
     }
 
     /**
@@ -185,7 +203,6 @@ public class ShooterTestStand extends OpMode {
     // These are all of the fields that we want in the datalog.
     // Note that order here is NOT important. The order is important in the setFields() call below
     public Datalogger.GenericField loopCounter = new Datalogger.GenericField("LoopCounter");
-    public Datalogger.GenericField runTime = new Datalogger.GenericField("RunTime");
     public Datalogger.GenericField flapPos = new Datalogger.GenericField("FlapPos");
     //public Datalogger.GenericField posError = new Datalogger.GenericField("posError");
 
@@ -207,7 +224,6 @@ public class ShooterTestStand extends OpMode {
                 // the fields is the order in which they will appear in the log.
                 .setFields(
                         loopCounter,
-                        runTime,
                         flapPos,
                         //posError,
                         shooterVelocity,

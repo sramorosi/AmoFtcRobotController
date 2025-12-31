@@ -3,17 +3,22 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
+import com.qualcomm.robotcore.hardware.IMU;
 
 import java.util.List;
 
 
-public class GoalTagLimelight {
-    Limelight3A limelight;
-    private double goalYaw; // inches
+public class LimelightDecode {
+    private Limelight3A limelight;
+    private IMU imu;
+    //private double goalYaw; // inches
     private double goalRange; // in
 
     private int teamID;
@@ -24,18 +29,25 @@ public class GoalTagLimelight {
     public boolean seeObelisk = false;
     private double tx;
     private double ty;
-    private double camera_height = 15.625; // in
-    private double target_height = 29.5; // in
-    private double camera_angle = 0.04009; // radians old was 0.0418
+    private double camera_height = 1.0; // in
+    private final double target_height = 29.5; // in
+    private double camera_angle = 0.0; // radians old was 0.0418
 
     public boolean isDataCurrent;
     //Pipeline 5 is 20(blue) pipeline 1 is 24(red)
 
-    public void init(HardwareMap hardwareMap, Telemetry telemetry) {
+    public void init(HardwareMap hardwareMap, double cameraY, double cameraA) {
+        camera_height = cameraY;
+        camera_angle = cameraA;
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
-        telemetry.setMsTransmissionInterval(11);
+        //limelight.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
+        //telemetry.setMsTransmissionInterval(11);
         limelight.start(); // This tells Limelight to start looking!
+
+        imu = hardwareMap.get(IMU.class,"imu");
+        RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD);
+        imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
     }
 
     public void readObelisk(Telemetry telemetry) {
@@ -71,34 +83,51 @@ public class GoalTagLimelight {
         }
     }
     public void process(Telemetry telemetry) {
+        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        limelight.updateRobotOrientation(orientation.getYaw());
+
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
             tx = result.getTx(); // How far left or right the target is (degrees)
             ty = result.getTy(); // How far up or down the target is (degrees)
 
-            double ta = result.getTa(); // How big the target looks (0%-100% of the image)
-            Pose3D botpose = result.getBotpose();
-            if (botpose != null) {
-                double x = botpose.getPosition().x;
-                telemetry.addData("botx", x);
-                double y = botpose.getPosition().y;
-                telemetry.addData("boty", y);
+            telemetry.addData("pipeline", result.getPipelineIndex());
 
-                goalYaw = botpose.getOrientation().getYaw();
-                goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle)) + 27; //added const.
+            //double ta = result.getTa(); // How big the target looks (0%-100% of the image)
+            //Pose3D botpose = result.getBotpose();
+            Pose3D botposeMT2 = result.getBotpose_MT2();
+            if (botposeMT2 != null) {
+                //double x = botpose.getPosition().x;
+                //telemetry.addData("botx", x);
+                //double y = botpose.getPosition().y;
+                //telemetry.addData("boty", y);
+                //telemetry.addData("MT1 Location", "(" + x + ", " + y + ")");
+                //telemetry.addData("MT1 Location", x);
+
+                //double xMT2 = botposeMT2.getPosition().x;
+                //telemetry.addData("botx", x);
+                //double yMT2 = botposeMT2.getPosition().y;
+                //telemetry.addData("boty", y);
+                //telemetry.addData("MT2 Location", "(" + xMT2 + ", " + yMT2 + ")");
+                //telemetry.addData("MT2 Location", xMT2);
+
+                //double thing = botposeMT2.getOrientation().getYaw()
+
+                //goalYaw = botpose.getOrientation().getYaw();
+
+                // was + 27
+                goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle)) + 0; //added const.
 
                 isDataCurrent = true;
 
-                telemetry.addData("MT1 Location", "(" + x + ", " + y + ")");
             } else {
                 isDataCurrent = false;
             }
 
             telemetry.addData("Target X", tx);
             telemetry.addData("Target Y", ty);
-            telemetry.addData("pipeline", result.getPipelineIndex());
             telemetry.addData("limelight Range", goalRange);
-            telemetry.addData("Target Area", ta);
+            //telemetry.addData("Target Area", ta);
         } else {
             isDataCurrent = false;
             telemetry.addData("Limelight", "No Targets");
@@ -135,4 +164,5 @@ public class GoalTagLimelight {
     public int getID() {
         return teamID;
     }
+    public void setCameraAngle(double CameraA) { camera_angle = CameraA; }
 }
