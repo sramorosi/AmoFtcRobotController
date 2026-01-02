@@ -40,9 +40,17 @@ public class LimelightDecode {
         camera_height = cameraY;
         camera_angle = cameraA;
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        //limelight.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
-        //telemetry.setMsTransmissionInterval(11);
         limelight.start(); // This tells Limelight to start looking!
+
+        /*
+        100 Hz is the default and recommended setting for many applications, especially in the FTC robotics competition using the Limelight 3A model.
+        This rate ensures you get the fastest possible updates (100 times per second), which is crucial for responsive, real-time robot control and
+        tracking of moving targets.
+        50 Hz can be a good option if you are experiencing performance issues or network congestion, as it reduces the frequency of data requests.
+        It is still frequent enough for many vision tasks
+         */
+        limelight.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
+
 
         imu = hardwareMap.get(IMU.class,"imu");
         RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP,
@@ -91,7 +99,7 @@ public class LimelightDecode {
             tx = result.getTx(); // How far left or right the target is (degrees)
             ty = result.getTy(); // How far up or down the target is (degrees)
 
-            telemetry.addData("pipeline", result.getPipelineIndex());
+            //telemetry.addData("pipeline", result.getPipelineIndex());
 
             //double ta = result.getTa(); // How big the target looks (0%-100% of the image)
             //Pose3D botpose = result.getBotpose();
@@ -104,19 +112,17 @@ public class LimelightDecode {
                 //telemetry.addData("MT1 Location", "(" + x + ", " + y + ")");
                 //telemetry.addData("MT1 Location", x);
 
-                //double xMT2 = botposeMT2.getPosition().x;
+                double xMT2 = botposeMT2.getPosition().x;
                 //telemetry.addData("botx", x);
-                //double yMT2 = botposeMT2.getPosition().y;
+                double yMT2 = botposeMT2.getPosition().y;
                 //telemetry.addData("boty", y);
-                //telemetry.addData("MT2 Location", "(" + xMT2 + ", " + yMT2 + ")");
+                telemetry.addData("MT2 Location (m)", "(" + xMT2 + ", " + yMT2 + ")");
                 //telemetry.addData("MT2 Location", xMT2);
 
-                //double thing = botposeMT2.getOrientation().getYaw()
+                //goalYaw = botposeMT2.getOrientation().getYaw();
 
-                //goalYaw = botpose.getOrientation().getYaw();
-
-                // was + 27
-                goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle)) + 0; //added const.
+                // Compute distance (range) from ty (pitch angle), assuming a fixed camera angle
+                goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle));
 
                 isDataCurrent = true;
 
@@ -124,9 +130,7 @@ public class LimelightDecode {
                 isDataCurrent = false;
             }
 
-            telemetry.addData("Target X", tx);
-            telemetry.addData("Target Y", ty);
-            telemetry.addData("limelight Range", goalRange);
+
             //telemetry.addData("Target Area", ta);
         } else {
             isDataCurrent = false;
@@ -160,6 +164,9 @@ public class LimelightDecode {
     }
     public double getTx() {
         return tx;
+    }
+    public double getTy() {
+        return ty;
     }
     public int getID() {
         return teamID;

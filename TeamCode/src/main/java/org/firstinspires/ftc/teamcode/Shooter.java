@@ -61,6 +61,16 @@ public class Shooter {
             return false;
         }
     }
+
+    public double getShooterVelo(LimelightDecode limelight) {
+        // compute velocity from range using function based on shooting experiments
+        double range = limelight.getRange();
+        double poly = 26.2 - 0.0381*range + 0.000915*range*range; // 2nd order polynomial
+        return poly;
+
+        //return (limelight.getRange() + 202.17 - 10) / 8.92124; // older function
+    }
+
     public void setPower(double power) {
         shooter.setPower(power);
     }

@@ -33,11 +33,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 /*
- * This opmode is a copy of 7462 DECODE Mecanum Teleop
- * Its purpose is to run a single shooter motor, launch flap servo, using limelight on a test stand
- * The overall purpose is to improve artefact shots (3 in a row, accuracy)
- * Data logging is used to see timing
+ * ShooterTestStand opmode runs a single shooter motor, launch flap servo, using limelight on a test stand
+ * Its purpose is to improve artifact shots (3 in a row, accuracy)
+ * Data logging is used to record real-time data.
  */
 @TeleOp(name = "ShooterTestStand")
 //@Disabled //comment this out when ready to add to android phone
@@ -52,9 +53,9 @@ public class ShooterTestStand extends OpMode {
 
     private static double IDLEPOWER = 20;
     //private double kP = 0.3; // was 0.14 before adding 0 breaking
-    private boolean leftIsRunning;
+    private boolean shooterAtSpeed = true; // needs to be true initially
 
-    private boolean readyToShoot = true;
+    private boolean readyForNextShoot = false;
     private boolean emergencyMode = false;
 
     private static final double FLAPDOWN = 0.45;
@@ -64,8 +65,7 @@ public class ShooterTestStand extends OpMode {
 
     int i=0;
 
-    double cameraA = 0.040; // fixed tilt, in radians
-
+    double cameraA = 0.042; // fixed tilt, in radians
 
     @Override
     public void init() {
@@ -80,6 +80,16 @@ public class ShooterTestStand extends OpMode {
         timerLeft.reset();
 
         launchFlapLeft.setPosition(FLAPDOWN);
+
+        /*
+        The telemetry.setMsTransmissionInterval() method in the FIRST Tech Challenge (FTC) SDK controls
+        how frequently telemetry data is sent from the Robot Controller to the Driver Station
+        250 (milliseconds) is the default value and a good general-purpose interval that balances updates with bandwidth usage.
+        100 to 50 (milliseconds) are useful for debugging or operations requiring faster updates (e.g., vision processing, rapid sensor changes).
+        A lower interval provides a more real-time view of data on the Driver Station but increases communication bandwidth usage,
+        which might impact other network-dependent tasks (like vision processing).
+         */
+        telemetry.setMsTransmissionInterval(50);
     }
 
     //we are using the methods from OpMode and @Override is so that we can write our own stuff for this method
@@ -88,16 +98,17 @@ public class ShooterTestStand extends OpMode {
         //telemetry.addData("Pattern", limelight.getObelisk());
         telemetry.addData("team ID", limelight.getID());
 
-        telemetry.addLine("Left Bumper to shoot");
-        telemetry.addLine("Press b for red, x for blue");
+        telemetry.addLine("Press B for red, X for blue");
         if (gamepad1.bWasPressed()) {
-//            goalTag.targetAprilTagID = 24;
+            // goalTag.targetAprilTagID = 24; RED
             limelight.setTeam(24);
         } else if (gamepad1.xWasPressed()) {
-            //goalTag.targetAprilTagID = 20;
+            // goalTag.targetAprilTagID = 20;  BLUE
             limelight.setTeam(20);
         }
 
+        telemetry.addLine("ADJUST CAMERA ANGLE USING DPAD LEFT AND RIGHT");
+        telemetry.addLine("TO GET THE CORRECT COMPUTED RANGE");
         if (gamepad1.dpadLeftWasPressed()) {
             cameraA += 0.002;
             limelight.setCameraAngle(cameraA);
@@ -109,64 +120,69 @@ public class ShooterTestStand extends OpMode {
 
         // Add limelight processing so we can see if range is good.
         limelight.process(telemetry);
+        //telemetry.addData("range", String.format("%.01f mm", sensorDistance.getDistance(DistanceUnit.MM)));
+
+        telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
+        telemetry.addData("Apriltag ty PITCH (DEG)",String.format(" %.1f", limelight.getTy()));
+        telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
 
         telemetry.update();
-
     }
 
     @Override
     public void start() {
         shooterLeft.targetVelocity = IDLEPOWER;
+        timerLeft.reset();
     }
 
     @Override
     public void loop() {
         limelight.process(telemetry);
 
-        shooterLeft.overridePower();
+        shooterLeft.overridePower(); // shooter motor speed controller
 
-        telemetry.addData("limelight angle", limelight.getTx());
-        telemetry.addData("shooterLeftCurrentVelocity", shooterLeft.getVelocity());
-        telemetry.addData("shooterLeftTargetVelocity", getShooterVelo());
-        //telemetry.addData("Kp", kP);
-        //telemetry.addData("TimerLeft", timerLeft.seconds());
+        telemetry.addLine("Left Bumper to shoot");
+
+        telemetry.addData("shooterLeftCurrentVelocity",String.format(" %.1f", shooterLeft.getVelocity()));
+        telemetry.addData("shooterLeftTargetVelocity",String.format(" %.1f", shooterLeft.getShooterVelo(limelight)));
+        telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
+
         telemetry.update();
 
 
-        // Driver Controls launch
-        //if (gamepad1.leftBumperWasPressed() && (limelight.isDataCurrent || emergencyMode)) {
-        if (gamepad1.left_bumper && readyToShoot && (limelight.isDataCurrent || emergencyMode)) {
-                shooterLeft.targetVelocity = getShooterVelo();
-            leftIsRunning = true;
-            readyToShoot = false;
+        // Driver commands launch sequence, repeating shots
+        if (gamepad1.left_bumper && readyForNextShoot && (limelight.isDataCurrent || emergencyMode)) {
+            shooterLeft.targetVelocity = shooterLeft.getShooterVelo(limelight);
+            shooterAtSpeed = false;
+            readyForNextShoot = false;
             timerLeft.reset();
         }
 
         // Shoot when at speed
-        if (leftIsRunning) {
+        if (!shooterAtSpeed) {
             if (shooterLeft.atSpeed()) {
                 timerLeft.reset();
                 launchFlapLeft.setPosition(FLAPUP);
-                leftIsRunning = false;
+                shooterAtSpeed = true;
             }
         }
 
         // Command launch Flap Down
-        if (timerLeft.seconds() > 0.4 && !leftIsRunning) {
-            launchFlapLeft.setPosition(FLAPDOWN);
-            //shooterLeft.targetVelocity = IDLEPOWER;
-            //readyToShoot=true;
-        }
-        // Flap Down and next artifact is ready
-        if (timerLeft.seconds() > 0.8 && !leftIsRunning) {
-            //launchFlapLeft.setPosition(FLAPDOWN);
+        if (timerLeft.seconds() > 0.4 && shooterAtSpeed) launchFlapLeft.setPosition(FLAPDOWN);
+
+        // Allow time for launch flap to go Down and artifact to enter. Toggle ready for next shoot
+        if (timerLeft.seconds() > 0.7 && shooterAtSpeed) readyForNextShoot =true;
+
+        // Finger is off of the button, set shooter speed back to idle
+        if (!gamepad1.left_bumper) {
             shooterLeft.targetVelocity = IDLEPOWER;
-            readyToShoot=true;
+            readyForNextShoot = true;
         }
+
         // If camera not working press this and shoot near point of close V.
         if (gamepad1.leftStickButtonWasPressed()) {
             shooterLeft.targetVelocity = 30;
-            IDLEPOWER = 30;
+            //IDLEPOWER = 30;
             emergencyMode = true;
         }
 
@@ -177,20 +193,11 @@ public class ShooterTestStand extends OpMode {
         datalog.flapPos.set(launchFlapLeft.getPosition());
         datalog.shooterVelocity.set(shooterLeft.getVelocity());
         datalog.targetVelocity.set(shooterLeft.targetVelocity);
+        datalog.shooterPower.set(shooterLeft.getPower());
+        datalog.targetRange.set(limelight.getRange());
         datalog.writeLine();
 
         i++;
-    }
-
-    public double getShooterVelo() {
-        // do math here
-        //return (limelight.getRange() + 202.17 - 10) / 8.92124; // older function
-        //return (limelight.getRange()+100.99)/7.3712;
-        double poly;
-        double range;
-        range = limelight.getRange();
-        poly = 26.2 - 0.0261*range + 0.000804*range*range;
-        return poly;
     }
 
     /**
@@ -204,10 +211,10 @@ public class ShooterTestStand extends OpMode {
     // Note that order here is NOT important. The order is important in the setFields() call below
     public Datalogger.GenericField loopCounter = new Datalogger.GenericField("LoopCounter");
     public Datalogger.GenericField flapPos = new Datalogger.GenericField("FlapPos");
-    //public Datalogger.GenericField posError = new Datalogger.GenericField("posError");
-
     public Datalogger.GenericField shooterVelocity = new Datalogger.GenericField("shooterVelocity");
     public Datalogger.GenericField targetVelocity = new Datalogger.GenericField("targetVelocity");
+    public Datalogger.GenericField shooterPower = new Datalogger.GenericField("shooterPower");
+    public Datalogger.GenericField targetRange = new Datalogger.GenericField("targetRange");
 
     public Datalog(String name) {
         // Build the underlying datalog object
@@ -227,7 +234,9 @@ public class ShooterTestStand extends OpMode {
                         flapPos,
                         //posError,
                         shooterVelocity,
-                        targetVelocity
+                        targetVelocity,
+                        shooterPower,
+                        targetRange
                 )
                 .build();
     }
