@@ -7,10 +7,14 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 import com.qualcomm.robotcore.hardware.IMU;
+import com.sun.tools.javac.util.BasicDiagnosticFormatter;
 
 import java.util.List;
 
@@ -35,6 +39,12 @@ public class LimelightDecode {
 
     public boolean isDataCurrent;
     //Pipeline 5 is 20(blue) pipeline 1 is 24(red)
+
+    public final static double MtoINCH = 39.3701;
+
+    double GoalX = -58.3727;  // where 0,0 is field center and X is toward audience wall
+    double blueGoalY = -55.6425;  // where 0,0 is field center and Y is toward blue alliance
+    double redGoalY = 55.6425;  // where 0,0 is field center and Y is toward blue alliance
 
     public void init(HardwareMap hardwareMap, double cameraY, double cameraA) {
         camera_height = cameraY;
@@ -102,22 +112,23 @@ public class LimelightDecode {
             //telemetry.addData("pipeline", result.getPipelineIndex());
 
             //double ta = result.getTa(); // How big the target looks (0%-100% of the image)
-            //Pose3D botpose = result.getBotpose();
+            Pose3D botpose = result.getBotpose();
             Pose3D botposeMT2 = result.getBotpose_MT2();
             if (botposeMT2 != null) {
-                //double x = botpose.getPosition().x;
-                //telemetry.addData("botx", x);
-                //double y = botpose.getPosition().y;
-                //telemetry.addData("boty", y);
-                //telemetry.addData("MT1 Location", "(" + x + ", " + y + ")");
-                //telemetry.addData("MT1 Location", x);
+                double x = botpose.getPosition().x*MtoINCH;
+                double y = botpose.getPosition().y*MtoINCH;
+                telemetry.addLine(String.format("MT1 Location %6.2f %6.2f (m)",x,y));
+                telemetry.addData("MT1 rotation", String.format(" %.2f",botpose.getOrientation().getYaw()));
+
+                double distance = 0.0;
+                if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
+                if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
+                telemetry.addData("MT1 Distance", String.format(" %.2f",distance));
 
                 double xMT2 = botposeMT2.getPosition().x;
-                //telemetry.addData("botx", x);
                 double yMT2 = botposeMT2.getPosition().y;
-                //telemetry.addData("boty", y);
-                telemetry.addData("MT2 Location (m)", "(" + xMT2 + ", " + yMT2 + ")");
-                //telemetry.addData("MT2 Location", xMT2);
+                telemetry.addLine(String.format("MT2 Location %6.2f %6.2f (m)",xMT2,yMT2));
+                telemetry.addData("MT2 rotation", String.format(" %.2f",botposeMT2.getOrientation().getYaw()));
 
                 //goalYaw = botposeMT2.getOrientation().getYaw();
 
@@ -130,8 +141,6 @@ public class LimelightDecode {
                 isDataCurrent = false;
             }
 
-
-            //telemetry.addData("Target Area", ta);
         } else {
             isDataCurrent = false;
             telemetry.addData("Limelight", "No Targets");
@@ -172,4 +181,34 @@ public class LimelightDecode {
         return teamID;
     }
     public void setCameraAngle(double CameraA) { camera_angle = CameraA; }
+
+    /**
+     * Calculates the Euclidean distance between two points (x1, y1) and (x2, y2).
+     *
+     * @param x1 the x-coordinate of the first point
+     * @param y1 the y-coordinate of the first point
+     * @param x2 the x-coordinate of the second point
+     * @param y2 the y-coordinate of the second point
+     * @return the distance between the two points as a double
+     */
+    public static double calculateDistance(double x1, double y1, double x2, double y2) {
+        // Calculate the differences in coordinates
+        double deltaX = x2 - x1;
+        double deltaY = y2 - y1;
+
+        // Square the differences
+        //double squaredDeltaX = Math.pow(deltaX, 2);
+        //double squaredDeltaY = Math.pow(deltaY, 2);
+        // Alternatively, use multiplication for performance:
+        double squaredDeltaX = deltaX * deltaX;
+        double squaredDeltaY = deltaY * deltaY;
+
+        // Sum the squares
+        double sumOfSquares = squaredDeltaX + squaredDeltaY;
+
+        // Take the square root of the sum
+        double distance = Math.sqrt(sumOfSquares);
+
+        return distance;
+    }
 }

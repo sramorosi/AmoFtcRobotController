@@ -65,7 +65,7 @@ public class ShooterTestStand extends OpMode {
 
     int i=0;
 
-    double cameraA = 0.042; // fixed tilt, in radians
+    double cameraA = 0.044; // fixed tilt, in radians
 
     @Override
     public void init() {
@@ -75,7 +75,7 @@ public class ShooterTestStand extends OpMode {
         shooterLeft.setControllerValues(0.3, 0.0243);
 
         limelight = new LimelightDecode();
-        limelight.init(hardwareMap, 17.0,cameraA);
+        limelight.init(hardwareMap, 16.8,cameraA);
 
         timerLeft.reset();
 
@@ -142,6 +142,8 @@ public class ShooterTestStand extends OpMode {
         shooterLeft.overridePower(); // shooter motor speed controller
 
         telemetry.addLine("Left Bumper to shoot");
+
+        telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
 
         telemetry.addData("shooterLeftCurrentVelocity",String.format(" %.1f", shooterLeft.getVelocity()));
         telemetry.addData("shooterLeftTargetVelocity",String.format(" %.1f", shooterLeft.getShooterVelo(limelight)));
