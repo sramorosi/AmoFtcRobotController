@@ -67,6 +67,8 @@ public class ShooterTestStand extends OpMode {
 
     double cameraA = 0.044; // fixed tilt, in radians
 
+    double robotYaw = 0.0; // Used by MegaTag 2  to get correct botpose (MT2)
+
     @Override
     public void init() {
         launchFlapLeft = hardwareMap.get(Servo.class, "launchFlapLeft");
@@ -107,7 +109,7 @@ public class ShooterTestStand extends OpMode {
             limelight.setTeam(20);
         }
 
-        telemetry.addLine("ADJUST CAMERA ANGLE USING DPAD LEFT AND RIGHT");
+        telemetry.addLine("ADJUST CAMERA PITCH ANGLE USING DPAD LEFT AND RIGHT");
         telemetry.addLine("TO GET THE CORRECT COMPUTED RANGE");
         if (gamepad1.dpadLeftWasPressed()) {
             cameraA += 0.002;
@@ -116,11 +118,19 @@ public class ShooterTestStand extends OpMode {
             cameraA -= 0.002;
             limelight.setCameraAngle(cameraA);
         }
-        telemetry.addData("Camera Angle ",cameraA);
+        telemetry.addData("Camera Pitch Angle ",cameraA);
 
-        // Add limelight processing so we can see if range is good.
-        limelight.process(telemetry);
-        //telemetry.addData("range", String.format("%.01f mm", sensorDistance.getDistance(DistanceUnit.MM)));
+        telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
+        telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
+        if (gamepad1.dpadUpWasPressed()) {
+            robotYaw += 1.0;
+        } else if (gamepad1.dpadDownWasPressed()) {
+            robotYaw -= 1.0;
+        }
+        telemetry.addData("Robot YAW for MT2 ",robotYaw);
+
+        limelight.processMT2(telemetry, robotYaw);
+        limelight.process(telemetry);  // this processes MT1 and gets tx ty
 
         telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
         telemetry.addData("Apriltag ty PITCH (DEG)",String.format(" %.1f", limelight.getTy()));
