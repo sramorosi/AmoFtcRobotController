@@ -67,7 +67,7 @@ public class ShooterTestStand extends OpMode {
 
     double cameraA = 0.044; // fixed tilt, in radians
 
-    double robotYaw = 0.0; // Used by MegaTag 2  to get correct botpose (MT2)
+    double robotYaw = 130.0; // Used by MegaTag 2  to get correct botpose (MT2)
 
     @Override
     public void init() {
@@ -123,9 +123,9 @@ public class ShooterTestStand extends OpMode {
         telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
         telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
         if (gamepad1.dpadUpWasPressed()) {
-            robotYaw += 1.0;
+            robotYaw += 2.0;
         } else if (gamepad1.dpadDownWasPressed()) {
-            robotYaw -= 1.0;
+            robotYaw -= 2.0;
         }
         telemetry.addData("Robot YAW for MT2 ",robotYaw);
 

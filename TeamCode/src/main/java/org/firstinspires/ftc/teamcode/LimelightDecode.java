@@ -102,8 +102,13 @@ public class LimelightDecode {
         }
     }
     public void process(Telemetry telemetry) {
-        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-        limelight.updateRobotOrientation(orientation.getYaw());
+        double x = 0;
+        double y = 0;
+        double yaw = 0;
+        double distance = 0;
+
+        //YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        //limelight.updateRobotOrientation(orientation.getYaw());
 
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
@@ -113,15 +118,13 @@ public class LimelightDecode {
             //double ta = result.getTa(); // How big the target looks (0%-100% of the image)
             Pose3D botpose = result.getBotpose();
             if (botpose != null) {
-                double x = botpose.getPosition().x*MtoINCH;
-                double y = botpose.getPosition().y*MtoINCH;
-                telemetry.addLine(String.format("MT1 Location %6.2f %6.2f (m)",x,y));
-                telemetry.addData("MT1 rotation", String.format(" %.2f",botpose.getOrientation().getYaw()));
+                x = botpose.getPosition().x*MtoINCH;
+                y = botpose.getPosition().y*MtoINCH;
+                yaw = botpose.getOrientation().getYaw();
 
-                double distance = 0.0;
                 if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
                 if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
-                telemetry.addData("MT1 Distance", String.format(" %.2f",distance));
+
 
                 // Compute distance (range) from ty (pitch angle), assuming a fixed camera angle
                 goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle));
@@ -134,11 +137,18 @@ public class LimelightDecode {
 
         } else {
             isDataCurrent = false;
-            telemetry.addData("Limelight", "No Targets");
         }
+        telemetry.addLine(String.format("MT1 Location %6.2f %6.2f (m)",x,y));
+        telemetry.addData("MT1 rotation", String.format(" %.2f",yaw));
+        telemetry.addData("MT1 Distance", String.format(" %.2f",distance));
     }
 
     public void processMT2(Telemetry telemetry, double robotYaw) {
+        double x = 0;
+        double y = 0;
+        double yaw = 0;
+        double distance = 0;
+
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         limelight.updateRobotOrientation(orientation.getYaw() + robotYaw);
 
@@ -146,20 +156,22 @@ public class LimelightDecode {
         if (result != null && result.isValid()) {
             Pose3D botposeMT2 = result.getBotpose_MT2();
             if (botposeMT2 != null) {
-                double x = botposeMT2.getPosition().x*MtoINCH;
-                double y = botposeMT2.getPosition().y*MtoINCH;
-                telemetry.addLine(String.format("MT2 Location %6.2f %6.2f (m)",x,y));
-                telemetry.addData("MT2 rotation", String.format(" %.2f",botposeMT2.getOrientation().getYaw()));
+                x = botposeMT2.getPosition().x*MtoINCH;
+                y = botposeMT2.getPosition().y*MtoINCH;
+                yaw = botposeMT2.getOrientation().getYaw();
 
-                double distance = 0.0;
+                distance = 0.0;
                 if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
                 if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
-                telemetry.addData("MT2 Distance", String.format(" %.2f",distance));
             }
 
         } else {
             telemetry.addData("Limelight MT2", "No Targets");
         }
+        telemetry.addLine(String.format("MT2 Location %6.2f %6.2f (m)",x,y));
+        telemetry.addData("MT2 rotation", String.format(" %.2f",yaw));
+        telemetry.addData("MT2 Distance", String.format(" %.2f",distance));
+
     }
 
 
