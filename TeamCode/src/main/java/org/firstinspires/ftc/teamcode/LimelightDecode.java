@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.annotation.SuppressLint;
+
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -7,14 +9,10 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 import com.qualcomm.robotcore.hardware.IMU;
-import com.sun.tools.javac.util.BasicDiagnosticFormatter;
 
 import java.util.List;
 
@@ -24,6 +22,7 @@ public class LimelightDecode {
     private IMU imu;
     //private double goalYaw; // inches
     private double goalRange; // in
+    private double distance = 0; // inch
 
     private int teamID;
 
@@ -101,11 +100,11 @@ public class LimelightDecode {
             }
         }
     }
+    @SuppressLint("DefaultLocale")
     public void process(Telemetry telemetry) {
         double x = 0;
         double y = 0;
         double yaw = 0;
-        double distance = 0;
 
         //YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         //limelight.updateRobotOrientation(orientation.getYaw());
@@ -142,12 +141,12 @@ public class LimelightDecode {
         telemetry.addData("MT1 rotation", String.format(" %.2f",yaw));
         telemetry.addData("MT1 Distance", String.format(" %.2f",distance));
     }
-
+    @SuppressLint("DefaultLocale")
     public void processMT2(Telemetry telemetry, double robotYaw) {
         double x = 0;
         double y = 0;
         double yaw = 0;
-        double distance = 0;
+        //double distance = 0;
 
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         limelight.updateRobotOrientation(orientation.getYaw() + robotYaw);
@@ -197,7 +196,7 @@ public class LimelightDecode {
         }
     }
     public double getRange() {
-        return goalRange;
+        return distance;
     }
     public double getTx() {
         return tx;
@@ -235,8 +234,8 @@ public class LimelightDecode {
         double sumOfSquares = squaredDeltaX + squaredDeltaY;
 
         // Take the square root of the sum
-        double distance = Math.sqrt(sumOfSquares);
+        double dist = Math.sqrt(sumOfSquares);
 
-        return distance;
+        return dist;
     }
 }
