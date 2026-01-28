@@ -20,7 +20,6 @@ import java.util.List;
 public class LimelightDecode {
     private Limelight3A limelight;
     private IMU imu;
-    //private double goalYaw; // inches
     private double goalRange; // in
     private double distance = 0; // inch
 
@@ -159,7 +158,7 @@ public class LimelightDecode {
                 y = botposeMT2.getPosition().y*MtoINCH;
                 yaw = botposeMT2.getOrientation().getYaw();
 
-                distance = 0.0;
+                //distance = 0.0;
                 if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
                 if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
             }
