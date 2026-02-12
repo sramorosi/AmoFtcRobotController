@@ -136,7 +136,7 @@ public class LimelightDecode {
         } else {
             isDataCurrent = false;
         }
-        telemetry.addLine(String.format("MT1 Location %6.2f %6.2f (m)",x,y));
+        telemetry.addLine(String.format("MT1 Location %6.2f %6.2f (in)",x,y));
         telemetry.addData("MT1 rotation", String.format(" %.2f",yaw));
         telemetry.addData("MT1 Distance", String.format(" %.2f",distance));
     }
@@ -148,6 +148,9 @@ public class LimelightDecode {
         //double distance = 0;
 
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+
+        telemetry.addData("IMU YAW", String.format(" %.2f",orientation.getYaw()));
+
         limelight.updateRobotOrientation(orientation.getYaw() + robotYaw);
 
         LLResult result = limelight.getLatestResult();
@@ -166,7 +169,7 @@ public class LimelightDecode {
         } else {
             telemetry.addData("Limelight MT2", "No Targets");
         }
-        telemetry.addLine(String.format("MT2 Location %6.2f %6.2f (m)",x,y));
+        telemetry.addLine(String.format("MT2 Location %6.2f %6.2f (in)",x,y));
         telemetry.addData("MT2 rotation", String.format(" %.2f",yaw));
         telemetry.addData("MT2 Distance", String.format(" %.2f",distance));
 

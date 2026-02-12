@@ -67,7 +67,7 @@ public class ShooterTestStand extends OpMode {
 
     double cameraA = 0.044; // fixed tilt, in radians
 
-    double robotYaw = 130.0; // Used by MegaTag 2  to get correct botpose (MT2)
+    double robotYaw = -17.0; // Used by MegaTag 2  to get correct botpose (MT2)
 
     @Override
     public void init() {
@@ -104,21 +104,23 @@ public class ShooterTestStand extends OpMode {
         if (gamepad1.bWasPressed()) {
             // goalTag.targetAprilTagID = 24; RED
             limelight.setTeam(24);
+            robotYaw = 175.0;
         } else if (gamepad1.xWasPressed()) {
             // goalTag.targetAprilTagID = 20;  BLUE
             limelight.setTeam(20);
+            robotYaw = -19.0;
         }
 
-        telemetry.addLine("ADJUST CAMERA PITCH ANGLE USING DPAD LEFT AND RIGHT");
-        telemetry.addLine("TO GET THE CORRECT COMPUTED RANGE");
-        if (gamepad1.dpadLeftWasPressed()) {
-            cameraA += 0.002;
-            limelight.setCameraAngle(cameraA);
-        } else if (gamepad1.dpadRightWasPressed()) {
-            cameraA -= 0.002;
-            limelight.setCameraAngle(cameraA);
-        }
-        telemetry.addData("Camera Pitch Angle ",cameraA);
+//        telemetry.addLine("ADJUST CAMERA PITCH ANGLE USING DPAD LEFT AND RIGHT");
+//        telemetry.addLine("TO GET THE CORRECT COMPUTED RANGE");
+//        if (gamepad1.dpadLeftWasPressed()) {
+//            cameraA += 0.002;
+//            limelight.setCameraAngle(cameraA);
+//        } else if (gamepad1.dpadRightWasPressed()) {
+//            cameraA -= 0.002;
+//            limelight.setCameraAngle(cameraA);
+//        }
+//        telemetry.addData("Camera Pitch Angle ",cameraA);
 
         telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
         telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
@@ -130,11 +132,12 @@ public class ShooterTestStand extends OpMode {
         telemetry.addData("Robot YAW for MT2 ",robotYaw);
 
         limelight.processMT2(telemetry, robotYaw);
+
         limelight.process(telemetry);  // this processes MT1 and gets tx ty
 
         telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
-        telemetry.addData("Apriltag ty PITCH (DEG)",String.format(" %.1f", limelight.getTy()));
-        telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
+        //telemetry.addData("Apriltag ty PITCH (DEG)",String.format(" %.1f", limelight.getTy()));
+        //telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
 
         telemetry.update();
     }
