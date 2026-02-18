@@ -1,39 +1,12 @@
-/* Copyright (c) 2025 FIRST. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+
 package org.firstinspires.ftc.teamcode;
+
+import android.annotation.SuppressLint;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /*
  * ShooterTestStand opmode runs a single shooter motor, launch flap servo, using limelight on a test stand
@@ -43,16 +16,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 @TeleOp(name = "ShooterTestStand")
 //@Disabled //comment this out when ready to add to android phone
 public class ShooterTestStand extends OpMode {
-    LimelightDecode limelight;
-    Shooter shooterLeft;
+    LimelightDecode limelight; // Team 7462 class for the limelight camera
+    Shooter shooter; // Team 7462 class for the shooter
 
-    Servo launchFlapLeft;
+    Servo launchFlap;
 
     // Timers
-    ElapsedTime timerLeft = new ElapsedTime();
+    ElapsedTime timer = new ElapsedTime();
 
     private static double IDLEPOWER = 20;
-    //private double kP = 0.3; // was 0.14 before adding 0 breaking
     private boolean shooterAtSpeed = true; // needs to be true initially
 
     private boolean readyForNextShoot = false;
@@ -71,17 +43,17 @@ public class ShooterTestStand extends OpMode {
 
     @Override
     public void init() {
-        launchFlapLeft = hardwareMap.get(Servo.class, "launchFlapLeft");
+        launchFlap = hardwareMap.get(Servo.class, "launchFlapLeft");
 
-        shooterLeft = new Shooter(hardwareMap, "shooterLeft", true);
-        shooterLeft.setControllerValues(0.3, 0.0243);
+        shooter = new Shooter(hardwareMap, "shooterLeft", true);
+        shooter.setControllerValues(0.3, 0.0243);
 
         limelight = new LimelightDecode();
         limelight.init(hardwareMap, 16.8,cameraA);
 
-        timerLeft.reset();
+        timer.reset();
 
-        launchFlapLeft.setPosition(FLAPDOWN);
+        launchFlap.setPosition(FLAPDOWN);
 
         /*
         The telemetry.setMsTransmissionInterval() method in the FIRST Tech Challenge (FTC) SDK controls
@@ -96,6 +68,7 @@ public class ShooterTestStand extends OpMode {
 
     //we are using the methods from OpMode and @Override is so that we can write our own stuff for this method
     @Override
+    @SuppressLint("DefaultLocale")
     public void init_loop() {
         //telemetry.addData("Pattern", limelight.getObelisk());
         telemetry.addData("team ID", limelight.getID());
@@ -111,92 +84,80 @@ public class ShooterTestStand extends OpMode {
             robotYaw = -19.0;
         }
 
-//        telemetry.addLine("ADJUST CAMERA PITCH ANGLE USING DPAD LEFT AND RIGHT");
-//        telemetry.addLine("TO GET THE CORRECT COMPUTED RANGE");
-//        if (gamepad1.dpadLeftWasPressed()) {
-//            cameraA += 0.002;
-//            limelight.setCameraAngle(cameraA);
-//        } else if (gamepad1.dpadRightWasPressed()) {
-//            cameraA -= 0.002;
-//            limelight.setCameraAngle(cameraA);
+//        telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
+//        telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
+//        if (gamepad1.dpadUpWasPressed()) {
+//            robotYaw += 2.0;
+//        } else if (gamepad1.dpadDownWasPressed()) {
+//            robotYaw -= 2.0;
 //        }
-//        telemetry.addData("Camera Pitch Angle ",cameraA);
-
-        telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
-        telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
-        if (gamepad1.dpadUpWasPressed()) {
-            robotYaw += 2.0;
-        } else if (gamepad1.dpadDownWasPressed()) {
-            robotYaw -= 2.0;
-        }
-        telemetry.addData("Robot YAW for MT2 ",robotYaw);
+        telemetry.addData("FIXED Robot YAW for MT2 ",robotYaw);
 
         limelight.processMT2(telemetry, robotYaw);
 
         limelight.process(telemetry);  // this processes MT1 and gets tx ty
 
         telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
-        //telemetry.addData("Apriltag ty PITCH (DEG)",String.format(" %.1f", limelight.getTy()));
-        //telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
 
         telemetry.update();
     }
 
     @Override
     public void start() {
-        shooterLeft.targetVelocity = IDLEPOWER;
-        timerLeft.reset();
+        shooter.targetVelocity = IDLEPOWER;
+        timer.reset();
     }
 
     @Override
+    @SuppressLint("DefaultLocale")
     public void loop() {
         limelight.process(telemetry);
 
-        shooterLeft.overridePower(); // shooter motor speed controller
+        shooter.overridePower(); // shooter motor speed controller
 
         telemetry.addLine("Left Bumper to shoot");
 
         telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
 
-        telemetry.addData("shooterLeftCurrentVelocity",String.format(" %.1f", shooterLeft.getVelocity()));
-        telemetry.addData("shooterLeftTargetVelocity",String.format(" %.1f", shooterLeft.getShooterVelo(limelight)));
-        telemetry.addData("Apriltag computed range (in)",String.format(" %.1f", limelight.getRange()));
+        telemetry.addData("shooter Current Velocity",String.format(" %.1f", shooter.getVelocity()));
+        telemetry.addData("shooter Target Velocity",String.format(" %.1f", shooter.getShooterVelo(limelight)));
+        telemetry.addData("Apriltag RANGE (in)",String.format(" %.1f", limelight.getRange()));
 
         telemetry.update();
 
 
         // Driver commands launch sequence, repeating shots
         if (gamepad1.left_bumper && readyForNextShoot && (limelight.isDataCurrent || emergencyMode)) {
-            shooterLeft.targetVelocity = shooterLeft.getShooterVelo(limelight);
+            shooter.targetVelocity = shooter.getShooterVelo(limelight);
             shooterAtSpeed = false;
             readyForNextShoot = false;
-            timerLeft.reset();
+            timer.reset();
         }
 
         // Shoot when at speed
         if (!shooterAtSpeed) {
-            if (shooterLeft.atSpeed()) {
-                timerLeft.reset();
-                launchFlapLeft.setPosition(FLAPUP);
+            if (shooter.atSpeed()) {
+                timer.reset();
+                launchFlap.setPosition(FLAPUP);
                 shooterAtSpeed = true;
             }
         }
 
         // Command launch Flap Down
-        if (timerLeft.seconds() > 0.4 && shooterAtSpeed) launchFlapLeft.setPosition(FLAPDOWN);
+        if (timer.seconds() > 0.4 && shooterAtSpeed) launchFlap.setPosition(FLAPDOWN);
 
         // Allow time for launch flap to go Down and artifact to enter. Toggle ready for next shoot
-        if (timerLeft.seconds() > 0.7 && shooterAtSpeed) readyForNextShoot =true;
+        if (timer.seconds() > 0.7 && shooterAtSpeed) readyForNextShoot =true;
 
         // Finger is off of the button, set shooter speed back to idle
         if (!gamepad1.left_bumper) {
-            shooterLeft.targetVelocity = IDLEPOWER;
+            shooter.targetVelocity = IDLEPOWER;
             readyForNextShoot = true;
         }
 
         // If camera not working press this and shoot near point of close V.
         if (gamepad1.leftStickButtonWasPressed()) {
-            shooterLeft.targetVelocity = 30;
+            shooter.targetVelocity = 30;
             //IDLEPOWER = 30;
             emergencyMode = true;
         }
@@ -205,10 +166,10 @@ public class ShooterTestStand extends OpMode {
         // Note that the order in which we set datalog fields
         // does *not* matter! Order is configured inside the Datalog class constructor.
         datalog.loopCounter.set(i);
-        datalog.flapPos.set(launchFlapLeft.getPosition());
-        datalog.shooterVelocity.set(shooterLeft.getVelocity());
-        datalog.targetVelocity.set(shooterLeft.targetVelocity);
-        datalog.shooterPower.set(shooterLeft.getPower());
+        datalog.flapPos.set(launchFlap.getPosition());
+        datalog.shooterVelocity.set(shooter.getVelocity());
+        datalog.targetVelocity.set(shooter.targetVelocity);
+        datalog.shooterPower.set(shooter.getPower());
         datalog.targetRange.set(limelight.getRange());
         datalog.writeLine();
 

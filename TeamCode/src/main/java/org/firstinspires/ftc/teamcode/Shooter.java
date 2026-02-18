@@ -6,9 +6,15 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
+/**
+ * Shooter Class.  Implements a feed forward plus feed back control system
+ */
 public class Shooter {
     private DcMotorEx shooter;
+
+    // Kvelo is the feed forward term.  Tune first by adjusting until rotational velo target is met
     public double Kvelo = 0.0243; // power multiplier for rotations per second
+
     // FeedBack term is Kp (proportional term)
     // Set Kp to zero when tuning the Kvelo term!!
     public double Kp = 0.3;  // no gain in improvement when increasing beyond this
@@ -17,14 +23,24 @@ public class Shooter {
 
     public double targetVelocity = 0;  // rotations per second (max is ~40)
 
+    /**
+     * Shooter Constructor
+     * @param hardwareMap
+     * @param name  The config file name for the motor
+     * @param dir
+     */
     public Shooter(HardwareMap hardwareMap, String name, Boolean dir) {
         shooter = (DcMotorEx) hardwareMap.get(DcMotor.class, name);
-        shooter.setDirection(DcMotor.Direction.FORWARD);
+        //shooter.setDirection(DcMotor.Direction.FORWARD);
         shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);  // WITH OUT!
         setMotorDirection(dir);
 
     }
+
+    /**
+     * overridePower method should be called in the main loop()
+     */
     public void overridePower() {
         double currentVelocity = shooter.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
         double veloError = targetVelocity - currentVelocity;
@@ -54,6 +70,11 @@ public class Shooter {
     public double getVelocity() {
         return shooter.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
     }
+
+    /**
+     * atSpeed method lets one know if the motor is running at the target speed
+     * @return
+     */
     public boolean atSpeed() {
         if (0.98*targetVelocity < this.getVelocity() && this.getVelocity() < 1.02*targetVelocity) {
             return true;
@@ -62,16 +83,18 @@ public class Shooter {
         }
     }
 
+    /**
+     * getShooterVelo method computes velocity from range using function based on shooting experiments
+     * @param limelight
+     * @return
+     */
     public double getShooterVelo(LimelightDecode limelight) {
-        // compute velocity from range using function based on shooting experiments
+
         double range = limelight.getRange();
-        //double poly = 26.2 - 0.0381*range + 0.000915*range*range; // 2nd order polynomial
         double poly = 19.0 + 0.125 * range;
         if (range < 80.0) poly = 29.0;
 
         return poly;
-
-        //return (limelight.getRange() + 202.17 - 10) / 8.92124; // older function
     }
 
     public void setPower(double power) {
