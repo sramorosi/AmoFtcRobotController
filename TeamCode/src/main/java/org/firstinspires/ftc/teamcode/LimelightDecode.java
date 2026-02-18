@@ -16,12 +16,13 @@ import com.qualcomm.robotcore.hardware.IMU;
 
 import java.util.List;
 
-
+/**
+ * Limelight 3A class created by FTC 7462
+ */
 public class LimelightDecode {
     private Limelight3A limelight;
     private IMU imu;
-    private double goalRange; // in
-    private double distance = 0; // inch
+    private double distance = 0; // (inch) from MegaTag bot pose data
 
     private int teamID;
 
@@ -31,9 +32,6 @@ public class LimelightDecode {
     public boolean seeObelisk = false;
     private double tx;
     private double ty;
-    private double camera_height = 1.0; // in
-    private final double target_height = 29.5; // in
-    private double camera_angle = 0.0; // radians old was 0.0418
 
     public boolean isDataCurrent;
     //Pipeline 5 is 20(blue) pipeline 1 is 24(red)
@@ -45,8 +43,6 @@ public class LimelightDecode {
     double redGoalY = 55.6425;  // where 0,0 is field center and Y is toward blue alliance
 
     public void init(HardwareMap hardwareMap, double cameraY, double cameraA) {
-        camera_height = cameraY;
-        camera_angle = cameraA;
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.start(); // This tells Limelight to start looking!
 
@@ -100,20 +96,16 @@ public class LimelightDecode {
         }
     }
     @SuppressLint("DefaultLocale")
-    public void process(Telemetry telemetry) {
+    public void processMT1(Telemetry telemetry) {
         double x = 0;
         double y = 0;
         double yaw = 0;
-
-        //YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-        //limelight.updateRobotOrientation(orientation.getYaw());
 
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
             tx = result.getTx(); // How far left or right the target is (degrees)
             ty = result.getTy(); // How far up or down the target is (degrees)
 
-            //double ta = result.getTa(); // How big the target looks (0%-100% of the image)
             Pose3D botpose = result.getBotpose();
             if (botpose != null) {
                 x = botpose.getPosition().x*MtoINCH;
@@ -122,10 +114,6 @@ public class LimelightDecode {
 
                 if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
                 if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
-
-
-                // Compute distance (range) from ty (pitch angle), assuming a fixed camera angle
-                goalRange = (target_height - camera_height) / (Math.tan(Math.toRadians(ty)+camera_angle));
 
                 isDataCurrent = true;
 
@@ -145,7 +133,6 @@ public class LimelightDecode {
         double x = 0;
         double y = 0;
         double yaw = 0;
-        //double distance = 0;
 
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 
@@ -161,7 +148,6 @@ public class LimelightDecode {
                 y = botposeMT2.getPosition().y*MtoINCH;
                 yaw = botposeMT2.getOrientation().getYaw();
 
-                //distance = 0.0;
                 if (result.getPipelineIndex() == 5) distance = calculateDistance(x, y,GoalX,blueGoalY);
                 if (result.getPipelineIndex() == 1) distance = calculateDistance(x, y,GoalX,redGoalY);
             }
@@ -203,11 +189,9 @@ public class LimelightDecode {
     public double getTx() {
         return tx;
     }
-    //public double getTy() {  return ty;    }
     public int getID() {
         return teamID;
     }
-    public void setCameraAngle(double CameraA) { camera_angle = CameraA; }
 
     /**
      * Calculates the Euclidean distance between two points (x1, y1) and (x2, y2).

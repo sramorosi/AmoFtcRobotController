@@ -95,7 +95,7 @@ public class ShooterTestStand extends OpMode {
 
         limelight.processMT2(telemetry, robotYaw);
 
-        limelight.process(telemetry);  // this processes MT1 and gets tx ty
+        limelight.processMT1(telemetry);  // this processes MT1 and gets tx ty
 
         telemetry.addData("Apriltag tx YAW (DEG) SHOULD BE ZERO",String.format(" %.1f", limelight.getTx()));
 
@@ -111,7 +111,7 @@ public class ShooterTestStand extends OpMode {
     @Override
     @SuppressLint("DefaultLocale")
     public void loop() {
-        limelight.process(telemetry);
+        limelight.processMT1(telemetry);
 
         shooter.overridePower(); // shooter motor speed controller
 
