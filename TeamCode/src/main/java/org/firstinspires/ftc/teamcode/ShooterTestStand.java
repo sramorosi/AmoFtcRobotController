@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-/*
+/**
  * ShooterTestStand opmode runs a single shooter motor, launch flap servo, using limelight on a test stand
  * Its purpose is to improve artifact shots (3 in a row, accuracy)
  * Data logging is used to record real-time data.
@@ -24,7 +24,7 @@ public class ShooterTestStand extends OpMode {
     // Timers
     ElapsedTime timer = new ElapsedTime();
 
-    private static double IDLEPOWER = 20;
+    private static final double IDLEPOWER = 20;
     private boolean shooterAtSpeed = true; // needs to be true initially
 
     private boolean readyForNextShoot = false;
@@ -84,13 +84,6 @@ public class ShooterTestStand extends OpMode {
             robotYaw = -19.0;
         }
 
-//        telemetry.addLine("ADJUST ROBOT YAW USING DPAD UP AND DOWN");
-//        telemetry.addLine("TO GET THE CORRECT MT2 VALUES");
-//        if (gamepad1.dpadUpWasPressed()) {
-//            robotYaw += 2.0;
-//        } else if (gamepad1.dpadDownWasPressed()) {
-//            robotYaw -= 2.0;
-//        }
         telemetry.addData("FIXED Robot YAW for MT2 ",robotYaw);
 
         limelight.processMT2(telemetry, robotYaw);
@@ -104,7 +97,7 @@ public class ShooterTestStand extends OpMode {
 
     @Override
     public void start() {
-        shooter.targetVelocity = IDLEPOWER;
+        shooter.setTargetVelocity(IDLEPOWER);
         timer.reset();
     }
 
@@ -128,7 +121,7 @@ public class ShooterTestStand extends OpMode {
 
         // Driver commands launch sequence, repeating shots
         if (gamepad1.left_bumper && readyForNextShoot && (limelight.isDataCurrent || emergencyMode)) {
-            shooter.targetVelocity = shooter.getShooterVelo(limelight);
+            shooter.setTargetVelocity(shooter.getShooterVelo(limelight));
             shooterAtSpeed = false;
             readyForNextShoot = false;
             timer.reset();
@@ -151,13 +144,13 @@ public class ShooterTestStand extends OpMode {
 
         // Finger is off of the button, set shooter speed back to idle
         if (!gamepad1.left_bumper) {
-            shooter.targetVelocity = IDLEPOWER;
+            shooter.setTargetVelocity(IDLEPOWER);
             readyForNextShoot = true;
         }
 
         // If camera not working press this and shoot near point of close V.
         if (gamepad1.leftStickButtonWasPressed()) {
-            shooter.targetVelocity = 30;
+            shooter.setTargetVelocity(30.0);
             //IDLEPOWER = 30;
             emergencyMode = true;
         }
@@ -168,7 +161,7 @@ public class ShooterTestStand extends OpMode {
         datalog.loopCounter.set(i);
         datalog.flapPos.set(launchFlap.getPosition());
         datalog.shooterVelocity.set(shooter.getVelocity());
-        datalog.targetVelocity.set(shooter.targetVelocity);
+        datalog.targetVelocity.set(shooter.getTargetVelocity());
         datalog.shooterPower.set(shooter.getPower());
         datalog.targetRange.set(limelight.getRange());
         datalog.writeLine();

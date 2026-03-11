@@ -10,30 +10,30 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Shooter Class.  Implements a feed forward plus feed back control system
  */
 public class Shooter {
-    private DcMotorEx shooter;
+    private final DcMotorEx shooterMotor;
 
     // Kvelo is the feed forward term.  Tune first by adjusting until rotational velo target is met
-    public double Kvelo = 0.0243; // power multiplier for rotations per second
+    private double Kvelo = 0.0243; // power multiplier for rotations per second
 
     // FeedBack term is Kp (proportional term)
     // Set Kp to zero when tuning the Kvelo term!!
-    public double Kp = 0.3;  // no gain in improvement when increasing beyond this
+    private double Kp = 0.3;  // no gain in improvement when increasing beyond this
 
-    static final double   COUNTS_PER_REV = 28 ;  // REV HD Hex 1:1 Motor Encoder
+    private static final double   COUNTS_PER_REV = 28 ;  // REV HD Hex 1:1 Motor Encoder
 
-    public double targetVelocity = 0;  // rotations per second (max is ~40)
+    private double targetVelocity = 0;  // rotations per second (max is ~40)
 
     /**
      * Shooter Constructor
-     * @param hardwareMap
+     * @param hardwareMap FTC harware map
      * @param name  The config file name for the motor
-     * @param dir
+     * @param dir Direction Boolean
      */
     public Shooter(HardwareMap hardwareMap, String name, Boolean dir) {
-        shooter = (DcMotorEx) hardwareMap.get(DcMotor.class, name);
+        shooterMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, name);
         //shooter.setDirection(DcMotor.Direction.FORWARD);
-        shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);  // WITH OUT!
+        shooterMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);  // WITH OUT!
         setMotorDirection(dir);
 
     }
@@ -42,18 +42,18 @@ public class Shooter {
      * overridePower method should be called in the main loop()
      */
     public void overridePower() {
-        double currentVelocity = shooter.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
+        double currentVelocity = shooterMotor.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
         double veloError = targetVelocity - currentVelocity;
         // CONTROLLER:  feedfoward = Kvelo + feedback = Kpos
         double setPower = targetVelocity * Kvelo  + veloError * Kp;
-        shooter.setPower(setPower);
+        shooterMotor.setPower(setPower);
     }
     private void setMotorDirection(Boolean dir) {
         //True = forward, false = backwards
         if (dir) {
-            shooter.setDirection(DcMotor.Direction.FORWARD);
+            shooterMotor.setDirection(DcMotor.Direction.FORWARD);
         } else {
-            shooter.setDirection(DcMotor.Direction.REVERSE);
+            shooterMotor.setDirection(DcMotor.Direction.REVERSE);
         }
     }
     public void setControllerValues(double Kp, double Kvelo) {
@@ -65,28 +65,24 @@ public class Shooter {
         this.targetVelocity = velo;
     }
     public double getPower() {
-        return shooter.getPower();
+        return shooterMotor.getPower();
     }
     public double getVelocity() {
-        return shooter.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
+        return shooterMotor.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
     }
 
     /**
      * atSpeed method lets one know if the motor is running at the target speed
-     * @return
+     * @return Boolean True is at speed
      */
     public boolean atSpeed() {
-        if (0.98*targetVelocity < this.getVelocity() && this.getVelocity() < 1.02*targetVelocity) {
-            return true;
-        } else {
-            return false;
-        }
+        return 0.98 * targetVelocity < this.getVelocity() && this.getVelocity() < 1.02 * targetVelocity;
     }
 
     /**
      * getShooterVelo method computes velocity from range using function based on shooting experiments
-     * @param limelight
-     * @return
+     * @param limelight Limelight pointer
+     * @return Velocity that shooter should run at for found distance
      */
     public double getShooterVelo(LimelightDecode limelight) {
 
@@ -98,6 +94,7 @@ public class Shooter {
     }
 
     public void setPower(double power) {
-        shooter.setPower(power);
+        shooterMotor.setPower(power);
     }
+    public double getTargetVelocity() {return targetVelocity;}
 }
