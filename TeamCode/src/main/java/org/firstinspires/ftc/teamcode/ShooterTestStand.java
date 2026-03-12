@@ -45,8 +45,8 @@ public class ShooterTestStand extends OpMode {
     public void init() {
         launchFlap = hardwareMap.get(Servo.class, "launchFlapLeft");
 
-        shooter = new Shooter(hardwareMap, "shooterLeft", true);
-        shooter.setControllerValues(0.3, 0.0243);
+        shooter = new Shooter(hardwareMap, "shooter", true);
+        shooter.setControllerValues(0.7, 0.03);
 
         limelight = new LimelightDecode();
         limelight.init(hardwareMap, 16.8,cameraA);

@@ -13,15 +13,16 @@ public class Shooter {
     private final DcMotorEx shooterMotor;
 
     // Kvelo is the feed forward term.  Tune first by adjusting until rotational velo target is met
-    private double Kvelo = 0.0243; // power multiplier for rotations per second
+    private double Kvelo = 0.03; // power multiplier for rotations per second
 
     // FeedBack term is Kp (proportional term)
     // Set Kp to zero when tuning the Kvelo term!!
-    private double Kp = 0.3;  // no gain in improvement when increasing beyond this
+    private double Kp = 0.7;  // no gain in improvement when increasing beyond this
 
     private static final double   COUNTS_PER_REV = 28 ;  // REV HD Hex 1:1 Motor Encoder
 
     private double targetVelocity = 0;  // rotations per second (max is ~40)
+    private double veloPower = 0; // used for determining Kp
 
     /**
      * Shooter Constructor
@@ -45,7 +46,8 @@ public class Shooter {
         double currentVelocity = shooterMotor.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
         double veloError = targetVelocity - currentVelocity;
         // CONTROLLER:  feedfoward = Kvelo + feedback = Kpos
-        double setPower = targetVelocity * Kvelo  + veloError * Kp;
+        veloPower = veloError * Kp;
+        double setPower = targetVelocity * Kvelo + veloPower;
         shooterMotor.setPower(setPower);
     }
     private void setMotorDirection(Boolean dir) {
@@ -56,17 +58,20 @@ public class Shooter {
             shooterMotor.setDirection(DcMotor.Direction.REVERSE);
         }
     }
+
+    /**
+     * Set the Control terms for the flywheel controller
+     * @param Kp Proportional feedback term
+     * @param Kvelo Feed Forward Velocity term
+     */
     public void setControllerValues(double Kp, double Kvelo) {
         this.Kp = Kp;
         this.Kvelo = Kvelo;
     }
 
-    public void setTargetVelocity(double velo) {
-        this.targetVelocity = velo;
-    }
-    public double getPower() {
-        return shooterMotor.getPower();
-    }
+    public void setTargetVelocity(double velo) { this.targetVelocity = velo;  }
+    public double getPower() { return shooterMotor.getPower();   }
+    public double getVeloPower() { return veloPower;}
     public double getVelocity() {
         return shooterMotor.getVelocity(AngleUnit.DEGREES)/COUNTS_PER_REV;
     }
